@@ -7,6 +7,11 @@ A Model Context Protocol (MCP) server that provides comprehensive PostgreSQL dat
 
 ## Quick Start
 
+## Prerequisites
+- Node.js ≥18.0.0
+- Access to a PostgreSQL server
+- (Optional) An MCP client like Cursor or Claude for AI integration
+
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=postgresql-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBoZW5rZXkvcG9zdGdyZXMtbWNwLXNlcnZlciIsIi0tY29ubmVjdGlvbi1zdHJpbmciLCJwb3N0Z3Jlc3FsOi8vdXNlcjpwYXNzd29yZEBob3N0OnBvcnQvZGF0YWJhc2UiXX0=)
 
 ### Option 1: npm (Recommended)
@@ -15,8 +20,15 @@ A Model Context Protocol (MCP) server that provides comprehensive PostgreSQL dat
 npm install -g @henkey/postgres-mcp-server
 
 # Or run directly with npx (no installation)
+# Use env var for connection string (optional)
+export POSTGRES_CONNECTION_STRING="postgresql://user:pass@localhost:5432/db"
+npx @henkey/postgres-mcp-server
+# Or pass directly:
 npx @henkey/postgres-mcp-server --connection-string "postgresql://user:pass@localhost:5432/db"
 ```
+
+# Verify installation
+npx @henkey/postgres-mcp-server --help
 
 Add to your MCP client configuration:
 ```json
@@ -38,7 +50,40 @@ Add to your MCP client configuration:
 npx -y @smithery/cli install @HenkDz/postgresql-mcp-server --client claude
 ```
 
-### Option 3: Manual Installation (Development)
+### Option 3: Docker (Recommended for Production)
+```bash
+# Build the Docker image
+docker build -t postgres-mcp-server .
+
+# Run with environment variable
+docker run -i --rm \
+  -e POSTGRES_CONNECTION_STRING="postgresql://user:password@host:port/database" \
+  postgres-mcp-server
+```
+
+Add to your MCP client configuration:
+```json
+{
+  "mcpServers": {
+    "postgresql-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "henkey/postgres-mcp:latest",
+        "-e",
+        "POSTGRES_CONNECTION_STRING"
+      ],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@host:port/database"
+      }
+    }
+  }
+}
+```
+
+### Option 4: Manual Installation (Development)
 ```bash
 git clone <repository-url>
 cd postgresql-mcp-server
@@ -131,6 +176,21 @@ Add to your MCP client configuration:
   "minDuration": 100
 }
 
+// Execute a parameterized SELECT query
+{
+  "operation": "select",
+  "query": "SELECT * FROM users WHERE id = $1",
+  "parameters": [1]
+}
+
+// Perform an INSERT mutation
+{
+  "operation": "insert",
+  "table": "products",
+  "data": {"name": "New Product", "price": 99.99},
+  "returning": "id"
+}
+
 // Manage database object comments
 {
   "operation": "set",
@@ -169,9 +229,90 @@ For additional information, see the [`docs/`](./docs/) folder:
 ✅ **Security focused** - SQL injection prevention, parameterized queries  
 ✅ **Robust architecture** - Connection pooling, comprehensive error handling
 
+## Docker Usage
+
+The PostgreSQL MCP Server is fully Docker-compatible and can be used in production environments.
+
+### Building the Image
+```bash
+# Build locally
+docker build -t postgres-mcp-server .
+
+# Or pull from Docker Hub
+docker pull henkey/postgres-mcp:latest
+```
+
+### Running with Environment Variables
+```bash
+# Basic usage (using Docker Hub image)
+docker run -i --rm \
+  -e POSTGRES_CONNECTION_STRING="postgresql://user:password@host:port/database" \
+  henkey/postgres-mcp:latest
+
+# Or with locally built image
+docker run -i --rm \
+  -e POSTGRES_CONNECTION_STRING="postgresql://user:password@host:port/database" \
+  postgres-mcp-server
+
+# With tools configuration
+docker run -i --rm \
+  -e POSTGRES_CONNECTION_STRING="postgresql://user:password@host:port/database" \
+  -e POSTGRES_TOOLS_CONFIG="/app/config/tools.json" \
+  -v /path/to/config:/app/config \
+  postgres-mcp-server
+```
+
+### Docker Compose Example
+```yaml
+version: '3.8'
+services:
+  postgres-mcp:
+    build: .
+    environment:
+      - POSTGRES_CONNECTION_STRING=postgresql://user:password@postgres:5432/database
+    depends_on:
+      - postgres
+    stdin_open: true
+    tty: true
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=database
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+```
+
+### MCP Client Configuration
+For use with MCP clients like Cursor or Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "postgresql-mcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "henkey/postgres-mcp:latest",
+        "-e",
+        "POSTGRES_CONNECTION_STRING"
+      ],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@host:port/database"
+      }
+    }
+  }
+}
+```
+
 ## Prerequisites
 
-- Node.js ≥ 18.0.0
+- Node.js ≥ 18.0.0 (for local development)
+- Docker (for containerized deployment)
 - PostgreSQL server access
 - Valid connection credentials
 

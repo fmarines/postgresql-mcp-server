@@ -6,13 +6,30 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
+# Copy TypeScript configuration
+COPY tsconfig.json ./
+
 # Copy all source files
 COPY . .
 
 # Build the TypeScript source
 RUN npm run build
 
+# Copy and set up entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S postgres-mcp -u 1001
+
+# Change ownership of the app directory
+RUN chown -R postgres-mcp:nodejs /app
+USER postgres-mcp
+
 # Expose any necessary ports if needed (optional)
 # EXPOSE 3000
 
-CMD ["node", "build/index.js"]
+# Use entrypoint script for flexible configuration
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD []
