@@ -1,37 +1,74 @@
 {
-  "name": "postgresql-mcp-server",
-  "version": "0.1.0",
-  "description": "MCP server for PostgreSQL database management",
-  "type": "module",
+  "name": "@henkey/postgres-mcp-server",
+  "version": "1.0.5",
+  "description": "A Model Context Protocol (MCP) server that provides comprehensive PostgreSQL database management capabilities for AI assistants",
   "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "type": "module",
+  "bin": {
+    "postgres-mcp": "build/index.js"
+  },
+  "files": [
+    "build/",
+    "README.md",
+    "LICENSE",
+    "TOOL_SCHEMAS.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "build": "tsc && chmod +x build/index.js",
+    "build": "tsc && node -e \"const fs = require('fs'); const path = 'build/index.js'; const stats = fs.statSync(path); fs.chmodSync(path, stats.mode | parseInt('755', 8));\"",
     "start": "node build/index.js",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsc -w & nodemon build/index.js",
     "lint": "eslint . --ext .ts",
-    "test": "vitest"
+    "test": "vitest",
+    "prepublishOnly": "npm run build",
+    "postinstall": "echo 'postgres-mcp-server installed successfully! Run with: npx @henkey/postgres-mcp-server'"
   },
   "keywords": [
     "postgresql",
+    "postgres",
     "mcp",
     "database",
-    "management"
+    "model-context-protocol",
+    "ai",
+    "claude",
+    "database-management",
+    "sql",
+    "ai-assistant"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": {
+    "name": "henkey",
+    "email": "henkey@example.com",
+    "url": "https://github.com/henkey"
+  },
+  "license": "AGPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HenkDz/postgresql-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HenkDz/postgresql-mcp-server/issues"
+  },
+  "homepage": "https://github.com/HenkDz/postgresql-mcp-server#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
-    "pg": "^8.11.0",
-    "pg-monitor": "^2.0.0"
+    "commander": "^12.1.0",
+    "pg": "^8.16.3",
+    "pg-monitor": "^3.0.0",
+    "pg-query-stream": "^4.2.4",
+    "zod": "^3.24.4",
+    "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/pg": "^8.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.0.0",
-    "vitest": "^1.0.0"
+    "@types/node": "^20.11.17",
+    "@types/pg": "^8.10.2",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "eslint": "^8.57.0",
+    "nodemon": "^3.0.3",
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
   }
 }
