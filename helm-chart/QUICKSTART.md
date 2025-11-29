@@ -62,6 +62,20 @@ helm install postgres-mcp ./helm-chart \
   --set postgresql.password=dev_password
 ```
 
+### With Existing PostgreSQL (Same Namespace)
+
+```bash
+# Install PostgreSQL first (bitnami chart)
+helm install postgresql bitnami/postgresql \
+  --namespace mcp-system \
+  --create-namespace
+
+# Deploy MCP Server using the PostgreSQL secret (SAME namespace!)
+helm install postgres-mcp ./helm-chart \
+  --namespace mcp-system \
+  -f examples/values-external-postgresql.yaml
+```
+
 ### Production with HA
 
 ```bash

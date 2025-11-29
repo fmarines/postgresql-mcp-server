@@ -40,16 +40,42 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
-            # PostgreSQL connection string from Secret
+            {{- if .Values.postgresql.existingSecret }}
+            # Option 1: Use existing secret with full connection string
             - name: POSTGRES_CONNECTION_STRING
               valueFrom:
                 secretKeyRef:
-                  {{- if .Values.postgresql.existingSecret }}
                   name: {{ .Values.postgresql.existingSecret }}
-                  {{- else }}
-                  name: {{ include "postgresql-mcp-server.fullname" . }}
-                  {{- end }}
                   key: POSTGRES_CONNECTION_STRING
+            {{- else if .Values.postgresql.existingSecretPasswordKey.name }}
+            # Option 2: Build connection string from external password secret
+            # Pass individual components and build connection string
+            - name: POSTGRES_HOST
+              value: {{ .Values.postgresql.host | quote }}
+            - name: POSTGRES_PORT
+              value: {{ .Values.postgresql.port | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.database | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.existingSecretPasswordKey.name }}
+                  key: {{ .Values.postgresql.existingSecretPasswordKey.key }}
+            - name: POSTGRES_SSL_MODE
+              value: {{ .Values.postgresql.sslMode | quote }}
+            # Build the connection string from components
+            - name: POSTGRES_CONNECTION_STRING
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)?sslmode=$(POSTGRES_SSL_MODE)"
+            {{- else }}
+            # Option 3: Use generated secret from values
+            - name: POSTGRES_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgresql-mcp-server.fullname" . }}
+                  key: POSTGRES_CONNECTION_STRING
+            {{- end }}
             {{- if .Values.tools.enabledTools }}
             # Tools configuration file path
             - name: POSTGRES_TOOLS_CONFIG

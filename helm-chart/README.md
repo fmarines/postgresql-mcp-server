@@ -71,13 +71,22 @@ The following table lists the configurable parameters of the PostgreSQL MCP Serv
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `postgresql.connectionString` | Full PostgreSQL connection string | `""` |
-| `postgresql.existingSecret` | Existing secret with connection string | `""` |
+| `postgresql.existingSecret` | Existing secret (same namespace) with connection string | `""` |
+| `postgresql.existingSecretPasswordKey.name` | Secret name (same namespace) containing password | `""` |
+| `postgresql.existingSecretPasswordKey.key` | Key in secret containing password | `"postgres-password"` |
 | `postgresql.host` | PostgreSQL host | `postgresql` |
 | `postgresql.port` | PostgreSQL port | `5432` |
 | `postgresql.database` | Database name | `postgres` |
 | `postgresql.username` | Database username | `postgres` |
 | `postgresql.password` | Database password | `""` |
 | `postgresql.sslMode` | SSL mode | `prefer` |
+
+**Connection Options (in order of precedence):**
+1. **Full Connection String Secret**: Use `postgresql.existingSecret` pointing to a secret (in same namespace) with `POSTGRES_CONNECTION_STRING` key
+2. **Password from Existing Secret**: Use `postgresql.existingSecretPasswordKey` to reference a secret (in same namespace) containing only the password - common when PostgreSQL is deployed separately
+3. **Values-based**: Provide connection details directly in values (not recommended for production)
+
+**Note:** All secrets must exist in the **same namespace** as the MCP server deployment. Kubernetes does not support cross-namespace secret references for security reasons.
 
 ### Tools Configuration
 
@@ -153,6 +162,47 @@ resources:
 
 ```bash
 helm install postgres-mcp ./helm-chart -f values-basic.yaml
+```
+
+### Using Existing PostgreSQL Secret (Same Namespace)
+
+When PostgreSQL is deployed in the same namespace, reference its secret:
+
+```yaml
+# values-existing-secret.yaml
+postgresql:
+  # Reference the PostgreSQL secret (must be in same namespace)
+  existingSecretPasswordKey:
+    name: "postgresql"  # Secret name (e.g., created by bitnami/postgresql)
+    key: "postgres-password"  # Key name in the secret
+  
+  # Connection details (password pulled from secret)
+  host: "postgresql"  # Service name in same namespace
+  port: 5432
+  database: "myapp"
+  username: "postgres"
+  sslMode: "require"
+
+replicaCount: 2
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+```
+
+```bash
+# Install PostgreSQL first (in same namespace)
+helm install postgresql bitnami/postgresql \
+  --namespace default \
+  --set auth.database=myapp
+
+# Install PostgreSQL MCP Server (same namespace)
+helm install postgres-mcp ./helm-chart \
+  --namespace default \
+  -f values-existing-secret.yaml
+
+# IMPORTANT: Both deployments must be in the same namespace!
 ```
 
 ### High Availability with Autoscaling

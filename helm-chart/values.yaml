@@ -23,15 +23,27 @@ postgresql:
   # Connection string format: postgresql://user:password@host:port/database
   # Can be set via existingSecret or directly (not recommended for production)
   connectionString: ""
-  # Use an existing secret containing the connection string
+  
+  # Option 1: Use an existing secret containing the full connection string
   # Secret should have key: POSTGRES_CONNECTION_STRING
   existingSecret: ""
-  # If using external PostgreSQL, specify connection details
+  
+  # Option 2: Use an existing secret (in same namespace) containing only the password
+  # Common when PostgreSQL is deployed separately in the same namespace
+  # Example: bitnami/postgresql creates a secret named "postgresql" with key "postgres-password"
+  existingSecretPasswordKey:
+    # Name of the secret in the same namespace (e.g., "postgresql")
+    name: ""
+    # Key in the secret containing the password (e.g., "postgres-password" or "password")
+    key: "postgres-password"
+  
+  # Connection details for building connection string
   # These will be used to construct connection string if connectionString is empty
   host: "postgresql"
   port: 5432
   database: "postgres"
   username: "postgres"
+  # Password - only used if existingSecret and existingSecretPasswordKey are not set
   password: ""
   # Enable SSL mode (disable, allow, prefer, require, verify-ca, verify-full)
   sslMode: "prefer"

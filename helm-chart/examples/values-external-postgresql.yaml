@@ -1,0 +1,116 @@
+# Example: Using Existing PostgreSQL Secret (Same Namespace)
+# This configuration pulls the PostgreSQL password from an existing secret
+# Common when using bitnami/postgresql or other PostgreSQL Helm charts
+# IMPORTANT: Both PostgreSQL and MCP server must be in the SAME namespace
+
+replicaCount: 2
+
+image:
+  repository: henkey/postgres-mcp
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# PostgreSQL Configuration - Using existing secret in same namespace
+postgresql:
+  # Reference PostgreSQL secret in the same namespace
+  # Example: bitnami/postgresql creates a secret named: <release-name>-postgresql
+  # with key: postgres-password
+  existingSecretPasswordKey:
+    name: "postgresql"  # Name of the PostgreSQL secret (same namespace)
+    key: "postgres-password"  # Key in the secret (bitnami uses "postgres-password")
+  
+  # Connection details (password will be pulled from secret)
+  host: "postgresql"  # Service name (same namespace - no need for FQDN)
+  port: 5432
+  database: "myapp"
+  username: "postgres"
+  sslMode: "prefer"
+  
+  # Note: Do not set 'password' or 'existingSecret' when using existingSecretPasswordKey
+
+# Tools configuration
+tools:
+  enabled: true
+  enabledTools: []  # All tools enabled
+
+# Resources
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75
+
+# Security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+
+# Network policy to allow connection to PostgreSQL (same namespace)
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    # Allow DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: kube-system
+      ports:
+      - protocol: UDP
+        port: 53
+    # Allow PostgreSQL connection (same namespace)
+    - to:
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: postgresql
+      ports:
+      - protocol: TCP
+        port: 5432
+
+# Example deployment commands (SAME NAMESPACE REQUIRED):
+#
+# 1. Install PostgreSQL first (bitnami chart) in a namespace:
+#    helm install postgresql bitnami/postgresql \
+#      --namespace mcp-system \
+#      --create-namespace \
+#      --set auth.database=myapp
+#
+# 2. Install PostgreSQL MCP Server in the SAME namespace:
+#    helm install postgres-mcp ./helm-chart \
+#      --namespace mcp-system \
+#      -f examples/values-external-postgresql.yaml
+#
+# IMPORTANT: Both must be in the same namespace!
+# Kubernetes does not allow cross-namespace secret references for security.
+#
+# Alternative secret key names for different PostgreSQL charts:
+# - Bitnami PostgreSQL: key = "postgres-password" or "password"
+# - CloudNativePG: key = "password"  
+# - Crunchy PostgreSQL: key = "password"
+# - Zalando PostgreSQL: key = "password"
