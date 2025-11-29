@@ -1,0 +1,42 @@
+****************************************************
+PostgreSQL MCP Server has been deployed successfully!
+****************************************************
+
+Release Name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+Your PostgreSQL MCP Server is now running with the following configuration:
+
+{{- if .Values.postgresql.existingSecret }}
+- Using existing secret: {{ .Values.postgresql.existingSecret }}
+{{- else }}
+- Database Host: {{ .Values.postgresql.host }}
+- Database Port: {{ .Values.postgresql.port }}
+- Database Name: {{ .Values.postgresql.database }}
+{{- end }}
+
+{{- if .Values.tools.enabledTools }}
+- Tools Configuration: Custom ({{ len .Values.tools.enabledTools }} tools enabled)
+{{- else }}
+- Tools Configuration: All tools enabled (default)
+{{- end }}
+
+{{- if .Values.autoscaling.enabled }}
+- Autoscaling: Enabled ({{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }} replicas)
+{{- else }}
+- Replicas: {{ .Values.replicaCount }}
+{{- end }}
+
+To get the status of your deployment:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "postgresql-mcp-server.name" . }}
+
+To view logs:
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "postgresql-mcp-server.name" . }} --tail=100 -f
+
+{{- if .Values.service.enabled }}
+To access the service:
+  kubectl get svc -n {{ .Release.Namespace }} {{ include "postgresql-mcp-server.fullname" . }}
+{{- end }}
+
+For more information, visit:
+  https://github.com/HenkDz/postgresql-mcp-server

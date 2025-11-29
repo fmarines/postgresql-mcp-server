@@ -1,0 +1,72 @@
+# Development Environment Values
+# Optimized for local development and testing
+
+replicaCount: 1
+
+image:
+  repository: henkey/postgres-mcp
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# PostgreSQL Configuration
+postgresql:
+  # For development, you can use direct connection details
+  host: postgresql
+  port: 5432
+  database: dev_database
+  username: dev_user
+  password: dev_password
+  sslMode: disable
+
+# Enable all tools for development
+tools:
+  enabled: true
+  enabledTools: []  # Empty list means all tools are enabled
+
+# Minimal resources for development
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# No autoscaling in development
+autoscaling:
+  enabled: false
+
+# Relaxed security for development
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# No network policies in development
+networkPolicy:
+  enabled: false
+
+# Simple probes
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 30
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}

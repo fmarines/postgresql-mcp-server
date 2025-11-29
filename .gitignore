@@ -1,9 +1,58 @@
+# Dependencies
 node_modules/
+
+# Build output
 build/
+dist/
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
 .env*
+!.env.example
+
+# IDE - VSCode
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE - Eclipse
+.project
+.classpath
+.settings/
+.metadata/
+
+# IDE - Visual Studio
+.vs/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.swp
+*.swo
+*.bak
+*.tmp
+*~
+
+# Project-specific
 .cursor/mcp.json
 REFACTOR_PROGRESS.md
 TOOLS.md
-CONSOLIDATION_PROGRESS.md
 CONSOLIDATION_PROGRESS.md

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: postgresql-mcp-server
+description: A Helm chart for PostgreSQL MCP Server - Model Context Protocol server for PostgreSQL management
+type: application
+version: 1.0.0
+appVersion: "1.0.5"
+keywords:
+  - postgresql
+  - mcp
+  - database
+  - model-context-protocol
+  - ai-assistant
+maintainers:
+  - name: henkey
+    email: henkey@example.com
+home: https://github.com/HenkDz/postgresql-mcp-server
+sources:
+  - https://github.com/HenkDz/postgresql-mcp-server
+icon: https://www.postgresql.org/media/img/about/press/elephant.png

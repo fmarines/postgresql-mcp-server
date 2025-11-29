@@ -1,0 +1,20 @@
+{{- if or .Values.tools.enabled .Values.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "postgresql-mcp-server.fullname" . }}
+  labels:
+    {{- include "postgresql-mcp-server.labels" . | nindent 4 }}
+data:
+  {{- if .Values.tools.enabled }}
+  {{- if .Values.tools.enabledTools }}
+  tools.json: |
+    {
+      "enabledTools": {{ .Values.tools.enabledTools | toJson }}
+    }
+  {{- end }}
+  {{- end }}
+  {{- with .Values.configMap.data }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}

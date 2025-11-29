@@ -1,0 +1,168 @@
+# Production Environment Values
+# Optimized for high availability, security, and performance
+
+replicaCount: 3
+
+image:
+  repository: henkey/postgres-mcp
+  pullPolicy: Always
+  tag: "1.0.5"  # Use specific version in production
+
+imagePullSecrets: []
+
+# PostgreSQL Configuration - Use existing secret in production
+postgresql:
+  # IMPORTANT: Create this secret before deployment
+  # kubectl create secret generic postgres-mcp-prod-secret \
+  #   --from-literal=POSTGRES_CONNECTION_STRING="postgresql://user:pass@host:5432/db?sslmode=require"
+  existingSecret: postgres-mcp-prod-secret
+  connectionString: ""  # Leave empty when using existingSecret
+  
+  # These are used only if connectionString is manually specified
+  host: postgresql-primary.database.svc.cluster.local
+  port: 5432
+  database: production
+  username: mcp_user
+  password: ""  # Never hardcode passwords in production
+  sslMode: require
+
+# Restrict to essential tools only
+tools:
+  enabled: true
+  enabledTools:
+    - postgres_analyze_database
+    - postgres_manage_schema
+    - postgres_execute_query
+    - postgres_execute_mutation
+    - postgres_manage_indexes
+    - postgres_manage_query
+    - postgres_manage_users
+    - postgres_debug_database
+
+# Production resources
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Enable autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 75
+
+# Pod Disruption Budget for HA
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+# Strict security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Network policies for security
+networkPolicy:
+  enabled: true
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []  # No ingress needed for stdio-based server
+  egress:
+    # Allow DNS
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: kube-system
+      ports:
+      - protocol: UDP
+        port: 53
+    # Allow PostgreSQL connection
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: database
+      - podSelector:
+          matchLabels:
+            app: postgresql
+      ports:
+      - protocol: TCP
+        port: 5432
+
+# Production-ready probes
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Service account with annotations
+serviceAccount:
+  create: true
+  annotations:
+    # Add IAM role annotations if using cloud providers
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/ROLE_NAME
+  name: ""
+
+# Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "false"
+  # app.kubernetes.io/component: database-management
+
+# Node selector for dedicated nodes (optional)
+nodeSelector: {}
+  # workload-type: database-tools
+
+# Tolerations for dedicated nodes (optional)
+tolerations: []
+  # - key: "workload-type"
+  #   operator: "Equal"
+  #   value: "database-tools"
+  #   effect: "NoSchedule"
+
+# Affinity rules for HA
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - postgresql-mcp-server
+        topologyKey: kubernetes.io/hostname
+
+# Volume configuration
+volumes:
+  tmpDir:
+    enabled: true
+    sizeLimit: 100Mi

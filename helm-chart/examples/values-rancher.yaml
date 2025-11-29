@@ -1,0 +1,143 @@
+# Rancher-Specific Deployment Values
+# Optimized for Rancher cluster management
+
+replicaCount: 2
+
+image:
+  repository: henkey/postgres-mcp
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# PostgreSQL Configuration
+# Option 1: Use Rancher Secrets Management
+postgresql:
+  # Create secret in Rancher UI: Resources -> Secrets -> Create
+  # Key: POSTGRES_CONNECTION_STRING
+  # Value: postgresql://user:password@host:5432/database
+  existingSecret: ""  # Set to your secret name in Rancher
+  
+  # Option 2: Direct configuration (less secure)
+  host: postgresql.cattle-system.svc.cluster.local
+  port: 5432
+  database: rancher_db
+  username: mcp_user
+  password: ""  # Use Rancher Secrets instead
+  sslMode: prefer
+
+# Tools configuration
+tools:
+  enabled: true
+  enabledTools: []  # All tools enabled
+
+# Reasonable resources for Rancher environment
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75
+
+# Security context compatible with Rancher defaults
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Network policy (adjust based on Rancher CNI)
+networkPolicy:
+  enabled: false  # Enable if using Canal or other CNI with NetworkPolicy support
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - to:
+      - podSelector:
+          matchLabels:
+            app: postgresql
+      ports:
+      - protocol: TCP
+        port: 5432
+
+# Probes
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Service account
+serviceAccount:
+  create: true
+  annotations:
+    # Rancher project annotations
+    field.cattle.io/projectId: ""  # Set your project ID
+  name: ""
+
+# Pod annotations for Rancher
+podAnnotations:
+  field.cattle.io/description: "PostgreSQL MCP Server for database management"
+  # field.cattle.io/projectId: "YOUR_PROJECT_ID"
+
+# Node selector for Rancher node pools
+nodeSelector: {}
+  # node-role.kubernetes.io/worker: "true"
+  # cattle.io/creator: rancher
+
+# Tolerations for Rancher nodes
+tolerations: []
+  # - key: "cattle.io/os"
+  #   operator: "Equal"
+  #   value: "linux"
+  #   effect: "NoSchedule"
+
+# Affinity for distribution across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: postgresql-mcp-server
+        topologyKey: kubernetes.io/hostname
+
+# Additional environment variables
+env: []
+  # - name: LOG_LEVEL
+  #   value: "info"
+
+# Volumes
+volumes:
+  tmpDir:
+    enabled: true
+    sizeLimit: 100Mi
+
+# ConfigMap for additional configuration
+configMap:
+  create: true
+  data: {}

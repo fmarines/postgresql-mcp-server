@@ -1,0 +1,221 @@
+# Default values for postgresql-mcp-server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of replicas
+replicaCount: 1
+
+image:
+  # Docker image repository
+  repository: henkey/postgres-mcp
+  # Image pull policy
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion
+  tag: "latest"
+
+# Image pull secrets for private registries
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# PostgreSQL connection configuration
+postgresql:
+  # Connection string format: postgresql://user:password@host:port/database
+  # Can be set via existingSecret or directly (not recommended for production)
+  connectionString: ""
+  # Use an existing secret containing the connection string
+  # Secret should have key: POSTGRES_CONNECTION_STRING
+  existingSecret: ""
+  # If using external PostgreSQL, specify connection details
+  # These will be used to construct connection string if connectionString is empty
+  host: "postgresql"
+  port: 5432
+  database: "postgres"
+  username: "postgres"
+  password: ""
+  # Enable SSL mode (disable, allow, prefer, require, verify-ca, verify-full)
+  sslMode: "prefer"
+
+# Tools configuration
+tools:
+  # Enable/disable specific tools
+  # If not specified, all tools are enabled by default
+  # Create a ConfigMap with enabled tools list
+  enabled: true
+  # List of enabled tool names (empty = all tools enabled)
+  enabledTools: []
+  # Example:
+  # enabledTools:
+  #   - postgres_analyze_database
+  #   - postgres_manage_schema
+  #   - postgres_execute_query
+
+# Service Account
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Service configuration (optional, mainly for monitoring/metrics)
+service:
+  enabled: false
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Liveness and readiness probes
+# Since this is a stdio-based server, we use exec commands
+livenessProbe:
+  enabled: true
+  exec:
+    command:
+      - /bin/sh
+      - -c
+      - "pgrep -f 'node.*index.js' || exit 1"
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  exec:
+    command:
+      - /bin/sh
+      - -c
+      - "pgrep -f 'node.*index.js' || exit 1"
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector for pod assignment
+nodeSelector: {}
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity for pod assignment
+affinity: {}
+
+# Volume mounts for writable directories
+volumes:
+  # Temp directory for runtime files
+  tmpDir:
+    enabled: true
+    sizeLimit: 100Mi
+
+# Environment variables
+env: []
+# Example:
+# env:
+#   - name: LOG_LEVEL
+#     value: "debug"
+
+# Extra environment variables from ConfigMaps or Secrets
+envFrom: []
+# Example:
+# envFrom:
+#   - configMapRef:
+#       name: my-config
+#   - secretRef:
+#       name: my-secret
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecarContainers: []
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    # Allow DNS
+    - ports:
+      - protocol: UDP
+        port: 53
+    # Allow PostgreSQL connection
+    - ports:
+      - protocol: TCP
+        port: 5432
+
+# Monitoring and observability
+monitoring:
+  # Enable Prometheus ServiceMonitor (requires Prometheus Operator)
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+  
+  # Enable Pod Monitor
+  podMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+# ConfigMap for application configuration
+configMap:
+  # Create a ConfigMap for tools configuration
+  create: true
+  data: {}
+  # Example:
+  # data:
+  #   custom-config.json: |
+  #     {
+  #       "enabledTools": ["postgres_analyze_database"]
+  #     }
