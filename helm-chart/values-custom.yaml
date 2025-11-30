@@ -1,0 +1,179 @@
+# Custom values for postgresql-mcp-server deployment
+# Based on user requirements with corrections
+
+replicaCount: 1
+
+image:
+  repository: informatzia/postgresql-mcp-server
+  pullPolicy: Always
+  tag: "test"
+
+imagePullSecrets:
+  - name: regcred
+
+nameOverride: ""
+fullnameOverride: ""
+
+# PostgreSQL connection configuration
+postgresql:
+  connectionString: ""
+  existingSecret: ""
+  existingSecretPasswordKey:
+    name: ""
+    key: "postgres-password"
+  host: "postgresql.postgresql.svc.cluster.local"
+  port: 5432
+  database: "postgres"
+  username: "postgres"
+  password: ""
+  sslMode: ""
+
+# Tools configuration
+tools:
+  enabled: true
+  enabledTools: []
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Service configuration
+service:
+  enabled: false
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Liveness probe
+livenessProbe:
+  enabled: true
+  exec:
+    command:
+      - /bin/sh
+      - -c
+      - "pgrep -f 'node.*index.js' || exit 1"
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Readiness probe
+readinessProbe:
+  enabled: true
+  exec:
+    command:
+      - /bin/sh
+      - -c
+      - "pgrep -f 'node.*index.js' || exit 1"
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector - deploy to specific node
+nodeSelector:
+  feature.node.kubernetes.io/system-os_release.maquina: PER440
+
+# Tolerations for pod assignment
+tolerations: []
+
+# Affinity for pod assignment
+affinity: {}
+
+# Volumes
+volumes:
+  tmpDir:
+    enabled: true
+    sizeLimit: 100Mi
+
+# Environment variables
+env: []
+
+# Extra environment variables from ConfigMaps or Secrets
+envFrom: []
+
+# Init containers
+initContainers: []
+
+# Sidecar containers
+sidecarContainers: []
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Network Policy
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    # Allow DNS
+    - ports:
+      - protocol: UDP
+        port: 53
+    # Allow PostgreSQL connection
+    - ports:
+      - protocol: TCP
+        port: 5432
+
+# Monitoring and observability
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+  podMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+# ConfigMap for application configuration
+configMap:
+  create: true
+  data: {}

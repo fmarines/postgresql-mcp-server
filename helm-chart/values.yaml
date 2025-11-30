@@ -34,7 +34,7 @@ postgresql:
   # Example: bitnami/postgresql creates a secret named "postgresql" with key "postgres-password"
   existingSecretPasswordKey:
     # Name of the secret in the same namespace (e.g., "postgresql")
-    name: ""
+    name: "postgresql"
     # Key in the secret containing the password (e.g., "postgres-password" or "password")
     key: "postgres-password"
   
