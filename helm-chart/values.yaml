@@ -2,11 +2,16 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# IMPORTANT: This chart deploys the MCP server with MCPO (MCP-to-OpenAPI proxy)
+# The stdio-based MCP server is wrapped by MCPO to expose it as an HTTP/OpenAPI service
+# Documentation: https://github.com/open-webui/mcpo
+
 # Number of replicas
 replicaCount: 1
 
 image:
   # Docker image repository
+  # The image includes both the Node.js MCP server and Python MCPO proxy
   repository: informatzia/postgresql-mcp-server
   # Image pull policy
   pullPolicy: Always
