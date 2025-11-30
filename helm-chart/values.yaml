@@ -126,14 +126,13 @@ resources:
     memory: 128Mi
 
 # Liveness and readiness probes
-# Since this is a stdio-based server, we use exec commands
+# With MCPO proxy, we use HTTP health checks against the OpenAPI docs endpoint
 livenessProbe:
   enabled: true
-  exec:
-    command:
-      - /bin/sh
-      - -c
-      - "pgrep -f 'node.*index.js' || exit 1"
+  httpGet:
+    path: /docs
+    port: http
+    scheme: HTTP
   initialDelaySeconds: 30
   periodSeconds: 30
   timeoutSeconds: 5
@@ -142,11 +141,10 @@ livenessProbe:
 
 readinessProbe:
   enabled: true
-  exec:
-    command:
-      - /bin/sh
-      - -c
-      - "pgrep -f 'node.*index.js' || exit 1"
+  httpGet:
+    path: /docs
+    port: http
+    scheme: HTTP
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 5
