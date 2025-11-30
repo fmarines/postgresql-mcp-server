@@ -7,14 +7,15 @@ replicaCount: 1
 
 image:
   # Docker image repository
-  repository: henkey/postgres-mcp
+  repository: informatzia/postgresql-mcp-server
   # Image pull policy
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion
-  tag: "latest"
+  tag: "test"
 
 # Image pull secrets for private registries
-imagePullSecrets: []
+imagePullSecrets:
+  - name: regcred
 nameOverride: ""
 fullnameOverride: ""
 
@@ -39,14 +40,14 @@ postgresql:
   
   # Connection details for building connection string
   # These will be used to construct connection string if connectionString is empty
-  host: "postgresql"
+  host: "postgresql.postgresql.svc.cluster.local"
   port: 5432
   database: "postgres"
   username: "postgres"
   # Password - only used if existingSecret and existingSecretPasswordKey are not set
   password: ""
   # Enable SSL mode (disable, allow, prefer, require, verify-ca, verify-full)
-  sslMode: "prefer"
+  sslMode: ""
 
 # Tools configuration
 tools:
@@ -91,12 +92,29 @@ securityContext:
   runAsNonRoot: true
   runAsUser: 1001
 
-# Service configuration (optional, mainly for monitoring/metrics)
+# Service configuration (required for Ingress)
 service:
-  enabled: false
+  enabled: true
   type: ClusterIP
   port: 8080
   annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: private-ca
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: postgresql-mcp.informatzia.mx
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - postgresql-mcp.informatzia.mx
+      secretName: postgresql-mcp-tls
 
 # Resource limits and requests
 resources:
@@ -144,7 +162,8 @@ autoscaling:
   targetMemoryUtilizationPercentage: 80
 
 # Node selector for pod assignment
-nodeSelector: {}
+nodeSelector:
+  feature.node.kubernetes.io/system-os_release.maquina: PER440
 
 # Tolerations for pod assignment
 tolerations: []

@@ -88,6 +88,12 @@ spec:
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if .Values.service.enabled }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          {{- end }}
           volumeMounts:
             {{- if .Values.volumes.tmpDir.enabled }}
             - name: tmp
